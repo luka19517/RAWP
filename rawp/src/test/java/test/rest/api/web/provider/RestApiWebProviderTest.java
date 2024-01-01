@@ -14,7 +14,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
-public class RestApiWebProviderMockitoTest {
+public class RestApiWebProviderTest {
 
     MockMvc mockMvc;
 

@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Service;
 import rest.api.web.provider.config.RestApiWebProviderProperties;
+import rest.api.web.provider.converter.TypeConverter;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
@@ -14,9 +15,10 @@ import java.util.Map;
 @Service
 public class RestApiWebRequestProcessorImpl implements RestApiWebRequestProcessor {
 
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
-    private ObjectMapper objectMapper = new ObjectMapper();
-
+    @Autowired
+    TypeConverter typeConverter;
     @Autowired
     RestApiWebProviderProperties props;
 
@@ -52,24 +54,9 @@ public class RestApiWebRequestProcessorImpl implements RestApiWebRequestProcesso
         if (!(method.getParameters().length == paramsMap.size()))
             return false;
         for (Parameter param : method.getParameters()) {
-
             try {
                 String paramTypeName = param.getParameterizedType().getTypeName();
-
-                switch (paramTypeName) {
-                    case "java.lang.Integer", "int" -> {
-                        paramsMap.put(param.getName(), Integer.valueOf(paramsMap.get(param.getName()).toString()));
-                    }
-                    case "java.lang.Float", "float" -> {
-                        paramsMap.put(param.getName(), Float.valueOf(paramsMap.get(param.getName()).toString()));
-                    }
-                    case "java.lang.Double", "double" -> {
-                        paramsMap.put(param.getName(), Double.valueOf(paramsMap.get(param.getName()).toString()));
-                    }
-                    default -> {
-                        String.valueOf(paramsMap.get(param.getName()));
-                    }
-                }
+                paramsMap.put(param.getName(), typeConverter.deserialize(objectMapper.writeValueAsString(paramsMap.get(param.getName())), paramTypeName));
             } catch (Exception e) {
                 return false;
             }

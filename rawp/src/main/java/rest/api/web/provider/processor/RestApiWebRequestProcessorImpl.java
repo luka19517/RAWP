@@ -6,6 +6,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Service;
 import rest.api.web.provider.config.RestApiWebProviderProperties;
 import rest.api.web.provider.converter.TypeConverter;
+import rest.api.web.provider.exception.RAWPException;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
@@ -34,7 +35,7 @@ public class RestApiWebRequestProcessorImpl implements RestApiWebRequestProcesso
             Method targetMethod = findTargetMethod(serviceClass, methodName, paramsMap);
             return targetMethod.invoke(applicationContext.getBean(serviceClass), getParamsInOrder(targetMethod, paramsMap));
         } catch (Exception e) {
-            throw new IllegalStateException("Error while parsing ", e);
+            throw new RAWPException("error.messages.process", e);
         }
     }
 

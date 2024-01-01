@@ -16,11 +16,9 @@ public class RestApiWebProvider {
 
     @PostMapping("/{serviceName}/{methodName}")
     public ResponseEntity<String> processRequest(@PathVariable String serviceName, @PathVariable String methodName, @RequestBody String body) {
-        try {
-            Object result = requestProcessor.processRequest(serviceName, methodName, body);
-            return new ResponseEntity<String>(result.toString(), HttpStatus.OK);
-        } catch (Exception e) {
-            throw new IllegalStateException("Exception thrown", e);
-        }
+
+        Object result = requestProcessor.processRequest(serviceName, methodName, body);
+        return new ResponseEntity<>(result.toString(), HttpStatus.OK);
+
     }
 }

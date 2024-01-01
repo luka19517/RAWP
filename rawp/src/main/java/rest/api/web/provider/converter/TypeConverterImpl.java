@@ -30,8 +30,8 @@ public class TypeConverterImpl implements TypeConverter {
     }
 
     @Override
-    public String serialize(Object value) {
-        return null;
+    public String serialize(Object value) throws JsonProcessingException {
+        return objectMapper.writeValueAsString(value);
     }
 
 }

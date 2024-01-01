@@ -6,5 +6,5 @@ public interface TypeConverter {
 
     Object deserialize(String jsonString, String typeName) throws ClassNotFoundException, JsonProcessingException;
 
-    String serialize(Object value);
+    String serialize(Object value) throws JsonProcessingException;
 }

@@ -57,6 +57,11 @@ public class DummyServiceImpl implements DummyService {
     }
 
     @Override
+    public String withListOfMapParameter(List<Map<String, String>> param1) {
+        return param1.size() + "";
+    }
+
+    @Override
     public String withArrayParameter(Dummy[] param1) {
         return param1.length + "";
     }

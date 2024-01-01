@@ -25,5 +25,7 @@ public interface DummyService {
 
     String withListParameter(List<Dummy> param1);
 
+    String withListOfMapParameter(List<Map<String, String>> param1);
+
     String withArrayParameter(Dummy[] param1);
 }

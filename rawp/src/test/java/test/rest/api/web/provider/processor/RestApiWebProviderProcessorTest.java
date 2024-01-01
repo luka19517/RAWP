@@ -47,6 +47,11 @@ public class RestApiWebProviderProcessorTest {
         requestProcessor.processRequest("DummyService", "withArrayParameter", "{\"param1\":[{ \"name\": \"POZZ\", \"address\":{\"city\": \"Beograd\"}}]}");
     }
 
+    @Test
+    public void test_withListOfMapParam() {
+        requestProcessor.processRequest("DummyService", "withListOfMapParameter", "{\"param1\":[{ \"KEY1\": \"POZZ\"}]}");
+    }
+
     //This test should fail because support is only for 1 level generics
     @Test
     public void test_withMapInsideMapParam() {

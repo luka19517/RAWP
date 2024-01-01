@@ -1,6 +1,7 @@
 package rest.api.web.provider.processor;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Service;
@@ -14,6 +15,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Service
+@Slf4j
 public class RestApiWebRequestProcessorImpl implements RestApiWebRequestProcessor {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -33,8 +35,9 @@ public class RestApiWebRequestProcessorImpl implements RestApiWebRequestProcesso
             Class<?> serviceClass = Class.forName(props.getRestApiServicePackage() + "." + serviceName);
             Map<String, Object> paramsMap = objectMapper.readValue(requestBody, HashMap.class);
             Method targetMethod = findTargetMethod(serviceClass, methodName, paramsMap);
-            return targetMethod.invoke(applicationContext.getBean(serviceClass), getParamsInOrder(targetMethod, paramsMap));
+            return typeConverter.serialize(targetMethod.invoke(applicationContext.getBean(serviceClass), getParamsInOrder(targetMethod, paramsMap)));
         } catch (Exception e) {
+            log.error("Error", e);
             throw new RAWPException("error.messages.process", e);
         }
     }

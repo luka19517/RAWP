@@ -1,13 +1,13 @@
 package rest.api.web.provider.swagger;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.module.jsonSchema.factories.SchemaFactoryWrapper;
+import io.swagger.v3.core.converter.AnnotatedType;
+import io.swagger.v3.core.converter.ModelConverters;
 import io.swagger.v3.oas.models.Operation;
 import io.swagger.v3.oas.models.PathItem;
+import io.swagger.v3.oas.models.media.ArraySchema;
 import io.swagger.v3.oas.models.media.Content;
 import io.swagger.v3.oas.models.media.MediaType;
-import io.swagger.v3.oas.models.media.ObjectSchema;
 import io.swagger.v3.oas.models.media.Schema;
 import io.swagger.v3.oas.models.parameters.RequestBody;
 import io.swagger.v3.oas.models.responses.ApiResponse;
@@ -20,7 +20,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import rest.api.web.provider.config.RestApiWebProviderProperties;
-import rest.api.web.provider.converter.SupportedTypes;
 
 import java.io.BufferedReader;
 import java.io.InputStream;
@@ -92,7 +91,7 @@ public class SwaggerConfig {
         try {
             bodyProperties = constructBodyProperties(swaggerEndpoint);
         } catch (NoSuchMethodException | InvocationTargetException | InstantiationException | IllegalAccessException |
-                 JsonProcessingException e) {
+                 JsonProcessingException | ClassNotFoundException e) {
             throw new RuntimeException(e);
         }
 
@@ -115,23 +114,19 @@ public class SwaggerConfig {
         return pathItem;
     }
 
-    private Map<String, Schema> constructBodyProperties(SwaggerEndpoint swaggerEndpoint) throws JsonProcessingException, NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
+    private Map<String, Schema> constructBodyProperties(SwaggerEndpoint swaggerEndpoint) throws JsonProcessingException, NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException, ClassNotFoundException {
         Map<String, Schema> requestBodyProperties = new HashMap<>();
-        ObjectMapper mapper = new ObjectMapper();
-        SchemaFactoryWrapper visitor = new SchemaFactoryWrapper();
         for (Parameter parameter : swaggerEndpoint.getParameters()) {
-            mapper.acceptJsonFormatVisitor(parameter.getType(), visitor);
-            String paramSchema = mapper.writeValueAsString(visitor.finalSchema());
-            Map<String, Object> schemeMap = mapper.readValue(paramSchema, HashMap.class);
-            System.out.println("parameter name : " + parameter.getName() + "Parameter scheme : " + mapper.writeValueAsString(schemeMap.get("properties")));
-            if (!Arrays.stream(SupportedTypes.supportedTypes).anyMatch(cd -> parameter.getParameterizedType().getTypeName().matches(cd.getNamePattern()))) {
-                Schema schema = new ObjectSchema().type("object").$schema(mapper.writeValueAsString(schemeMap.get("properties")))
-                        .type("object").description(parameter.getName());
-                requestBodyProperties.put(parameter.getName(), schema);
+            Schema schema = null;
+            if (parameter.getParameterizedType().getTypeName().matches("java.util.List.*")) {
+                String listTypeName = parameter.getParameterizedType().getTypeName();
+                Class itemType = Class.forName(parameter.getParameterizedType().getTypeName().substring(listTypeName.indexOf("<") + 1, listTypeName.lastIndexOf(">")));
+                schema = new ArraySchema().items(
+                        ModelConverters.getInstance().resolveAsResolvedSchema(new AnnotatedType(itemType)).schema);
             } else {
-                Schema schema = new ObjectSchema().$schema(paramSchema).description(parameter.getName());
-                requestBodyProperties.put(parameter.getName(), schema);
+                schema = ModelConverters.getInstance().resolveAsResolvedSchema(new AnnotatedType(parameter.getType())).schema;
             }
+            requestBodyProperties.put(parameter.getName(), schema);
         }
         return requestBodyProperties;
     }

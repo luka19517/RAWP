@@ -96,7 +96,7 @@ public class SwaggerConfig {
         }
 
         ApiResponses apiResponses = new ApiResponses();
-        apiResponses.addApiResponse("200", new ApiResponse().description("OK"));
+        apiResponses.addApiResponse("200", new ApiResponse().description("OK").content(new Content().addMediaType("application/json", new MediaType().schema(ModelConverters.getInstance().resolveAsResolvedSchema(new AnnotatedType(swaggerEndpoint.getReturnType())).schema))));
         apiResponses.addApiResponse("500", new ApiResponse().description("Internal Server Error"));
 
         Operation operation = new Operation()

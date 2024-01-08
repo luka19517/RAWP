@@ -5,10 +5,7 @@ import io.swagger.v3.core.converter.AnnotatedType;
 import io.swagger.v3.core.converter.ModelConverters;
 import io.swagger.v3.oas.models.Operation;
 import io.swagger.v3.oas.models.PathItem;
-import io.swagger.v3.oas.models.media.ArraySchema;
-import io.swagger.v3.oas.models.media.Content;
-import io.swagger.v3.oas.models.media.MediaType;
-import io.swagger.v3.oas.models.media.Schema;
+import io.swagger.v3.oas.models.media.*;
 import io.swagger.v3.oas.models.parameters.RequestBody;
 import io.swagger.v3.oas.models.responses.ApiResponse;
 import io.swagger.v3.oas.models.responses.ApiResponses;
@@ -146,11 +143,23 @@ public class SwaggerConfig {
                 Class itemType = Class.forName(listTypeName.substring(0, listTypeName.indexOf("[")));
                 schema = new ArraySchema().items(
                         ModelConverters.getInstance().resolveAsResolvedSchema(new AnnotatedType(itemType)).schema);
+            } else if (parameter.getParameterizedType().getTypeName().matches("java.util.Map.*")) {
+                String listTypeName = parameter.getParameterizedType().getTypeName();
+                String genericTypes = listTypeName.substring(listTypeName.indexOf("<") + 1, listTypeName.lastIndexOf(">"));
+                String valueType = genericTypes.split(",")[1].trim();
+                schema = new MapSchema().properties(createMapSchema(valueType));
             } else {
                 schema = ModelConverters.getInstance().resolveAsResolvedSchema(new AnnotatedType(parameter.getType())).schema;
             }
             requestBodyProperties.put(parameter.getName(), schema);
         }
         return requestBodyProperties;
+    }
+
+    Map<String, Schema> createMapSchema(String className) throws ClassNotFoundException {
+        System.out.println(className);
+        Map<String, Schema> map = new HashMap<>();
+        map.put("key", ModelConverters.getInstance().readAllAsResolvedSchema(new AnnotatedType(Class.forName(className))).schema);
+        return map;
     }
 }

@@ -51,11 +51,27 @@ public class SwaggerConfig {
     @Bean
     public OpenApiCustomizer openApiCustomizer() {
         List<SwaggerEndpoint> allServices = findAllApiEndpoints();
+        Map<String, Schema> schemas = registerAllSchemas();
         Map<String, PathItem> all = allServices.stream()
                 .collect(Collectors.toMap(swaggerEndpoint -> "/api/" + swaggerEndpoint.getServiceName() + "/" + swaggerEndpoint.getMethodName(),
                         this::buildPathItem));
-        return openApi -> openApi.getPaths().putAll(all);
+        return openApi -> {
+            openApi.getComponents().setSchemas(schemas);
+            openApi.getPaths().putAll(all);
 
+        };
+    }
+
+    private Map<String, Schema> registerAllSchemas() {
+        Map<String, Schema> result = new HashMap<>();
+        InputStream stream = ClassLoader.getSystemClassLoader().getResourceAsStream(props.getRestApiModelPackage().replaceAll("[.]", "/"));
+        assert stream != null;
+        BufferedReader reader = new BufferedReader(new InputStreamReader(stream));
+        List<Class> models = reader.lines().filter(line -> line.endsWith(".class")).map(line -> getClass(line, props.getRestApiModelPackage())).sorted(Comparator.comparing(Class::getCanonicalName)).collect(Collectors.toList());
+        for (Class model : models) {
+            result.put(model.getSimpleName(), ModelConverters.getInstance().resolveAsResolvedSchema(new AnnotatedType(model)).schema);
+        }
+        return result;
     }
 
     private List<SwaggerEndpoint> findAllApiEndpoints() {
@@ -90,7 +106,8 @@ public class SwaggerConfig {
         Map<String, Schema> bodyProperties = null;
         try {
             bodyProperties = constructBodyProperties(swaggerEndpoint);
-        } catch (NoSuchMethodException | InvocationTargetException | InstantiationException | IllegalAccessException |
+        } catch (NoSuchMethodException | InvocationTargetException | InstantiationException |
+                 IllegalAccessException |
                  JsonProcessingException | ClassNotFoundException e) {
             throw new RuntimeException(e);
         }
@@ -114,13 +131,19 @@ public class SwaggerConfig {
         return pathItem;
     }
 
-    private Map<String, Schema> constructBodyProperties(SwaggerEndpoint swaggerEndpoint) throws JsonProcessingException, NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException, ClassNotFoundException {
+    private Map<String, Schema> constructBodyProperties(SwaggerEndpoint swaggerEndpoint) throws
+            JsonProcessingException, NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException, ClassNotFoundException {
         Map<String, Schema> requestBodyProperties = new HashMap<>();
         for (Parameter parameter : swaggerEndpoint.getParameters()) {
             Schema schema = null;
             if (parameter.getParameterizedType().getTypeName().matches("java.util.List.*")) {
                 String listTypeName = parameter.getParameterizedType().getTypeName();
-                Class itemType = Class.forName(parameter.getParameterizedType().getTypeName().substring(listTypeName.indexOf("<") + 1, listTypeName.lastIndexOf(">")));
+                Class itemType = Class.forName(listTypeName.substring(listTypeName.indexOf("<") + 1, listTypeName.lastIndexOf(">")));
+                schema = new ArraySchema().items(
+                        ModelConverters.getInstance().resolveAsResolvedSchema(new AnnotatedType(itemType)).schema);
+            } else if (parameter.getParameterizedType().getTypeName().matches(".*\\[].*")) {
+                String listTypeName = parameter.getParameterizedType().getTypeName();
+                Class itemType = Class.forName(listTypeName.substring(0, listTypeName.indexOf("[")));
                 schema = new ArraySchema().items(
                         ModelConverters.getInstance().resolveAsResolvedSchema(new AnnotatedType(itemType)).schema);
             } else {

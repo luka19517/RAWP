@@ -65,4 +65,9 @@ public class DummyServiceImpl implements DummyService {
     public String withArrayParameter(Dummy[] param1) {
         return param1.length + "";
     }
+
+    @Override
+    public int withArrayParameterPrimitive(int[] param1) {
+        return param1.length;
+    }
 }

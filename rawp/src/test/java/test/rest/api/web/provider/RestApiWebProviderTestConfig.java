@@ -6,7 +6,7 @@ import org.springframework.context.annotation.Import;
 import rest.api.web.provider.config.RestApiWebProviderConfig;
 
 @SpringBootConfiguration
-@ComponentScan(basePackages = "dummy.rest.api")
+@ComponentScan(basePackages = {"dummy.rest.api"})
 @Import(RestApiWebProviderConfig.class)
 public class RestApiWebProviderTestConfig {
 }

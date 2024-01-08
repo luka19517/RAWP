@@ -15,58 +15,58 @@ public class SupportedTypes {
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
     public static ClassDefinition[] supportedTypes = new ClassDefinition[]{
-            ClassDefinition.builder().namePattern("int").simpleClassType(Integer.class).classTypeResolveFunction(((paramTypeString, jsonContent) -> {
+            ClassDefinition.builder().namePattern("int").simpleClassType(int.class).classTypeResolveFunction(((paramTypeString, jsonContent) -> {
                 try {
-                    return objectMapper.readValue(jsonContent, Class.forName("java.lang.Integer"));
-                } catch (ClassNotFoundException | JsonProcessingException e) {
+                    return objectMapper.readValue(jsonContent, int.class);
+                } catch (JsonProcessingException e) {
                     throw new RuntimeException(e);
                 }
             }
             )).build(),
-            ClassDefinition.builder().namePattern("float").simpleClassType(Float.class).classTypeResolveFunction(((paramTypeString, jsonContent) -> {
+            ClassDefinition.builder().namePattern("float").simpleClassType(float.class).classTypeResolveFunction(((paramTypeString, jsonContent) -> {
                 try {
-                    return objectMapper.readValue(jsonContent, Class.forName("java.lang.Float"));
-                } catch (ClassNotFoundException | JsonProcessingException e) {
+                    return objectMapper.readValue(jsonContent, float.class);
+                } catch (JsonProcessingException e) {
                     throw new RuntimeException(e);
                 }
             }
             )).build(),
-            ClassDefinition.builder().namePattern("double").simpleClassType(Double.class).classTypeResolveFunction(((paramTypeString, jsonContent) -> {
+            ClassDefinition.builder().namePattern("double").simpleClassType(double.class).classTypeResolveFunction(((paramTypeString, jsonContent) -> {
                 try {
-                    return objectMapper.readValue(jsonContent, Class.forName("java.lang.Double"));
-                } catch (ClassNotFoundException | JsonProcessingException e) {
+                    return objectMapper.readValue(jsonContent, double.class);
+                } catch (JsonProcessingException e) {
                     throw new RuntimeException(e);
                 }
             }
             )).build(),
             ClassDefinition.builder().namePattern("java.lang.Integer").simpleClassType(Integer.class).classTypeResolveFunction(((paramTypeString, jsonContent) -> {
                 try {
-                    return objectMapper.readValue(jsonContent, Class.forName("java.lang.Integer"));
-                } catch (ClassNotFoundException | JsonProcessingException e) {
+                    return objectMapper.readValue(jsonContent, Integer.class);
+                } catch (JsonProcessingException e) {
                     throw new RuntimeException(e);
                 }
             }
             )).build(),
             ClassDefinition.builder().namePattern("java.lang.Float").simpleClassType(Float.class).classTypeResolveFunction(((paramTypeString, jsonContent) -> {
                 try {
-                    return objectMapper.readValue(jsonContent, Class.forName("java.lang.Float"));
-                } catch (ClassNotFoundException | JsonProcessingException e) {
+                    return objectMapper.readValue(jsonContent, Float.class);
+                } catch (JsonProcessingException e) {
                     throw new RuntimeException(e);
                 }
             }
             )).build(),
             ClassDefinition.builder().namePattern("java.lang.Double").simpleClassType(Double.class).classTypeResolveFunction(((paramTypeString, jsonContent) -> {
                 try {
-                    return objectMapper.readValue(jsonContent, Class.forName("java.lang.Double"));
-                } catch (ClassNotFoundException | JsonProcessingException e) {
+                    return objectMapper.readValue(jsonContent, Double.class);
+                } catch (JsonProcessingException e) {
                     throw new RuntimeException(e);
                 }
             }
             )).build(),
             ClassDefinition.builder().namePattern("java.lang.String").simpleClassType(String.class).classTypeResolveFunction(((paramTypeString, jsonContent) -> {
                 try {
-                    return objectMapper.readValue(jsonContent, Class.forName("java.lang.String"));
-                } catch (ClassNotFoundException | JsonProcessingException e) {
+                    return objectMapper.readValue(jsonContent, String.class);
+                } catch (JsonProcessingException e) {
                     throw new RuntimeException(e);
                 }
             }
@@ -95,8 +95,11 @@ public class SupportedTypes {
             )).build(),
             ClassDefinition.builder().namePattern(".*\\[\\].*").classTypeResolveFunction(((paramTypeString, jsonContent) -> {
                 try {
+                    if (isSupported(paramTypeString)) {
+                        return objectMapper.readValue(jsonContent, Objects.requireNonNull(findSimpleClassType(paramTypeString)).arrayType());
+                    }
                     return objectMapper.readValue(jsonContent, Class.forName(paramTypeString).arrayType());
-                } catch (ClassNotFoundException | JsonProcessingException e) {
+                } catch (JsonProcessingException | ClassNotFoundException e) {
                     throw new RuntimeException(e);
                 }
             }
@@ -112,7 +115,7 @@ public class SupportedTypes {
         return Arrays.stream(supportedTypes).anyMatch(cd -> fullClassName.matches(cd.getNamePattern()));
     }
 
-    public static Class findSimpleClassType(String fullClassName) {
+    public static Class<?> findSimpleClassType(String fullClassName) {
         if (!isSupported(fullClassName))
             return null;
         List<ClassDefinition> targetCD = Arrays.stream(supportedTypes).filter(cd -> fullClassName.matches(cd.getNamePattern())).toList();

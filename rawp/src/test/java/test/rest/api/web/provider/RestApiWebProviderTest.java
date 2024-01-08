@@ -7,7 +7,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import rest.api.web.provider.RestApiWebProvider;
+import rest.api.web.provider.controller.RestApiWebProvider;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -28,6 +28,6 @@ public class RestApiWebProviderTest {
 
     @Test
     public void test1() throws Exception {
-        mockMvc.perform(post("/api/DummyService/withoutParametersReturnsString").contentType(MediaType.APPLICATION_JSON).content("{}")).andExpect(status().isOk()).andExpect(content().string("withoutParametersReturnsString"));
+        mockMvc.perform(post("/api/DummyService/withoutParametersReturnsString").contentType(MediaType.APPLICATION_JSON).content("{}")).andExpect(status().isOk()).andExpect(content().string("\"withoutParametersReturnsString\""));
     }
 }

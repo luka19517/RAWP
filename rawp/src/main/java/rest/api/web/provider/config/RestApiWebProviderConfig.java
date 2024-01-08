@@ -12,7 +12,7 @@ import org.springframework.context.support.ResourceBundleMessageSource;
 
 @Configuration
 @Configurable
-@ComponentScan(basePackages = {"rest.api.web.provider"})
+@ComponentScan(basePackages = {"rest.api.web.provider.config", "rest.api.web.provider.converter", "rest.api.web.provider.exception", "rest.api.web.provider.processor", "rest.api.web.provider.controller"})
 @PropertySource("classpath:application.properties")
 public class RestApiWebProviderConfig {
 

@@ -29,7 +29,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Configuration
-public class SwaggerConfig {
+public class RestApiWebProviderSwaggerConfig {
 
     @Autowired
     RestApiWebProviderProperties props;
@@ -114,7 +114,6 @@ public class SwaggerConfig {
         ApiResponse okApiResponse = new ApiResponse().description("OK");
         ApiResponse errorApiResponse = new ApiResponse().description("Internal Server Error");
         try {
-            System.out.println("Return type for " + swaggerEndpoint.getMethodName() + " " + swaggerEndpoint.getReturnType());
             okApiResponse.setContent(new Content().addMediaType("application/json", new MediaType().schema(createSchema(swaggerEndpoint.getReturnType()))));
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -141,7 +140,6 @@ public class SwaggerConfig {
             JsonProcessingException, NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException, ClassNotFoundException {
         Map<String, Schema> requestBodyProperties = new HashMap<>();
         for (Parameter parameter : swaggerEndpoint.getParameters()) {
-            System.out.println(parameter.getParameterizedType().getTypeName());
             requestBodyProperties.put(parameter.getName(), createSchema(parameter.getParameterizedType().getTypeName()));
         }
         return requestBodyProperties;
@@ -156,9 +154,15 @@ public class SwaggerConfig {
             String parametrizedTypePart = fullClassName.substring(fullClassName.indexOf("<") + 1, fullClassName.lastIndexOf(">"));
             return new MapSchema().properties(createMapSchema(parametrizedTypePart.split(",")[1].trim()));
         } else if (fullClassName.matches(".*\\[].*")) {
-            Class itemType = Class.forName(fullClassName.substring(0, fullClassName.indexOf("[")));
-            return new ArraySchema().items(
-                    ModelConverters.getInstance().resolveAsResolvedSchema(new AnnotatedType(itemType)).schema);
+            String genericTypeName = fullClassName.substring(0, fullClassName.indexOf("["));
+            if (SupportedTypes.isSupported(genericTypeName)) {
+                return new ArraySchema().items(
+                        ModelConverters.getInstance().resolveAsResolvedSchema(new AnnotatedType(SupportedTypes.findSimpleClassType(genericTypeName))).schema);
+            } else {
+                return new ArraySchema().items(
+                        ModelConverters.getInstance().resolveAsResolvedSchema(new AnnotatedType(Class.forName(genericTypeName))).schema);
+            }
+
         } else if (fullClassName.matches("void")) {
             return ModelConverters.getInstance().resolveAsResolvedSchema(new AnnotatedType(void.class)).schema;
         } else if (SupportedTypes.isSupported(fullClassName)) {

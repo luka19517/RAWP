@@ -28,4 +28,6 @@ public interface DummyService {
     String withListOfMapParameter(List<Map<String, String>> param1);
 
     String withArrayParameter(Dummy[] param1);
+
+    int withArrayParameterPrimitive(int[] param1);
 }

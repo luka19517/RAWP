@@ -1,4 +1,4 @@
-package rest.api.web.provider;
+package rest.api.web.provider.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;

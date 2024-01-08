@@ -12,6 +12,6 @@ public class SwaggerEndpoint {
     private String serviceName;
     private String methodName;
     private Parameter[] parameters;
-    private Class<?> returnType;
+    private String returnType;
 
 }

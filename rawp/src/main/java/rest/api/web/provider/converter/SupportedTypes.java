@@ -6,16 +6,16 @@ import com.fasterxml.jackson.databind.type.CollectionType;
 import com.fasterxml.jackson.databind.type.MapType;
 import lombok.Builder;
 import lombok.Data;
+import org.springframework.util.Assert;
 
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.*;
 
 public class SupportedTypes {
 
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
     public static ClassDefinition[] supportedTypes = new ClassDefinition[]{
-            ClassDefinition.builder().namePattern("int").classTypeResolveFunction(((paramTypeString, jsonContent) -> {
+            ClassDefinition.builder().namePattern("int").simpleClassType(Integer.class).classTypeResolveFunction(((paramTypeString, jsonContent) -> {
                 try {
                     return objectMapper.readValue(jsonContent, Class.forName("java.lang.Integer"));
                 } catch (ClassNotFoundException | JsonProcessingException e) {
@@ -23,7 +23,7 @@ public class SupportedTypes {
                 }
             }
             )).build(),
-            ClassDefinition.builder().namePattern("float").classTypeResolveFunction(((paramTypeString, jsonContent) -> {
+            ClassDefinition.builder().namePattern("float").simpleClassType(Float.class).classTypeResolveFunction(((paramTypeString, jsonContent) -> {
                 try {
                     return objectMapper.readValue(jsonContent, Class.forName("java.lang.Float"));
                 } catch (ClassNotFoundException | JsonProcessingException e) {
@@ -31,7 +31,7 @@ public class SupportedTypes {
                 }
             }
             )).build(),
-            ClassDefinition.builder().namePattern("double").classTypeResolveFunction(((paramTypeString, jsonContent) -> {
+            ClassDefinition.builder().namePattern("double").simpleClassType(Double.class).classTypeResolveFunction(((paramTypeString, jsonContent) -> {
                 try {
                     return objectMapper.readValue(jsonContent, Class.forName("java.lang.Double"));
                 } catch (ClassNotFoundException | JsonProcessingException e) {
@@ -39,7 +39,7 @@ public class SupportedTypes {
                 }
             }
             )).build(),
-            ClassDefinition.builder().namePattern("java.lang.Integer").classTypeResolveFunction(((paramTypeString, jsonContent) -> {
+            ClassDefinition.builder().namePattern("java.lang.Integer").simpleClassType(Integer.class).classTypeResolveFunction(((paramTypeString, jsonContent) -> {
                 try {
                     return objectMapper.readValue(jsonContent, Class.forName("java.lang.Integer"));
                 } catch (ClassNotFoundException | JsonProcessingException e) {
@@ -47,7 +47,7 @@ public class SupportedTypes {
                 }
             }
             )).build(),
-            ClassDefinition.builder().namePattern("java.lang.Float").classTypeResolveFunction(((paramTypeString, jsonContent) -> {
+            ClassDefinition.builder().namePattern("java.lang.Float").simpleClassType(Float.class).classTypeResolveFunction(((paramTypeString, jsonContent) -> {
                 try {
                     return objectMapper.readValue(jsonContent, Class.forName("java.lang.Float"));
                 } catch (ClassNotFoundException | JsonProcessingException e) {
@@ -55,7 +55,7 @@ public class SupportedTypes {
                 }
             }
             )).build(),
-            ClassDefinition.builder().namePattern("java.lang.Double").classTypeResolveFunction(((paramTypeString, jsonContent) -> {
+            ClassDefinition.builder().namePattern("java.lang.Double").simpleClassType(Double.class).classTypeResolveFunction(((paramTypeString, jsonContent) -> {
                 try {
                     return objectMapper.readValue(jsonContent, Class.forName("java.lang.Double"));
                 } catch (ClassNotFoundException | JsonProcessingException e) {
@@ -63,7 +63,7 @@ public class SupportedTypes {
                 }
             }
             )).build(),
-            ClassDefinition.builder().namePattern("java.lang.String").classTypeResolveFunction(((paramTypeString, jsonContent) -> {
+            ClassDefinition.builder().namePattern("java.lang.String").simpleClassType(String.class).classTypeResolveFunction(((paramTypeString, jsonContent) -> {
                 try {
                     return objectMapper.readValue(jsonContent, Class.forName("java.lang.String"));
                 } catch (ClassNotFoundException | JsonProcessingException e) {
@@ -71,7 +71,7 @@ public class SupportedTypes {
                 }
             }
             )).build(),
-            ClassDefinition.builder().namePattern("java.util.Map.*").classTypeResolveFunction(((paramTypeString, jsonContent) -> {
+            ClassDefinition.builder().namePattern("java.util.Map.*").simpleClassType(Map.class).classTypeResolveFunction(((paramTypeString, jsonContent) -> {
                 try {
                     String[] genericTypes = paramTypeString.split(",");
                     String typeParameter1 = genericTypes[0].trim();
@@ -83,7 +83,7 @@ public class SupportedTypes {
                 }
             }
             )).build(),
-            ClassDefinition.builder().namePattern("java.util.List.*").classTypeResolveFunction(((paramTypeString, jsonContent) -> {
+            ClassDefinition.builder().namePattern("java.util.List.*").simpleClassType(List.class).classTypeResolveFunction(((paramTypeString, jsonContent) -> {
                 try {
                     String typeParameter = paramTypeString.trim();
                     CollectionType collectionType = objectMapper.getTypeFactory().constructCollectionType(ArrayList.class, Class.forName(typeParameter));
@@ -104,14 +104,27 @@ public class SupportedTypes {
     };
 
     @FunctionalInterface
-    interface ClassTypeResolver {
+    public interface ClassTypeResolver {
         Object resolveClassType(String paramTypeString, String jsonContent);
+    }
+
+    public static boolean isSupported(String fullClassName) {
+        return Arrays.stream(supportedTypes).anyMatch(cd -> fullClassName.matches(cd.getNamePattern()));
+    }
+
+    public static Class findSimpleClassType(String fullClassName) {
+        if (!isSupported(fullClassName))
+            return null;
+        List<ClassDefinition> targetCD = Arrays.stream(supportedTypes).filter(cd -> fullClassName.matches(cd.getNamePattern())).toList();
+        Assert.isTrue(targetCD.size() == 1, "Multiple supportedTypes are found");
+        return targetCD.get(0).simpleClassType;
     }
 
     @Data
     @Builder
     public static class ClassDefinition {
         private String namePattern;
+        private Class simpleClassType;
         private ClassTypeResolver classTypeResolveFunction;
     }
 }

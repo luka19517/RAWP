@@ -17,6 +17,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import rest.api.web.provider.config.RestApiWebProviderProperties;
+import rest.api.web.provider.converter.SupportedTypes;
 
 import java.io.BufferedReader;
 import java.io.InputStream;
@@ -82,7 +83,7 @@ public class SwaggerConfig {
             for (Method method : service.getDeclaredMethods()) {
                 SwaggerEndpoint swaggerEndpoint = SwaggerEndpoint.builder().serviceName(service.getSimpleName()).methodName(method.getName()).build();
                 swaggerEndpoint.setParameters(method.getParameters());
-                swaggerEndpoint.setReturnType(method.getReturnType());
+                swaggerEndpoint.setReturnType(method.getGenericReturnType().getTypeName());
                 result.add(swaggerEndpoint);
             }
         }
@@ -110,8 +111,16 @@ public class SwaggerConfig {
         }
 
         ApiResponses apiResponses = new ApiResponses();
-        apiResponses.addApiResponse("200", new ApiResponse().description("OK").content(new Content().addMediaType("application/json", new MediaType().schema(ModelConverters.getInstance().resolveAsResolvedSchema(new AnnotatedType(swaggerEndpoint.getReturnType())).schema))));
-        apiResponses.addApiResponse("500", new ApiResponse().description("Internal Server Error"));
+        ApiResponse okApiResponse = new ApiResponse().description("OK");
+        ApiResponse errorApiResponse = new ApiResponse().description("Internal Server Error");
+        try {
+            System.out.println("Return type for " + swaggerEndpoint.getMethodName() + " " + swaggerEndpoint.getReturnType());
+            okApiResponse.setContent(new Content().addMediaType("application/json", new MediaType().schema(createSchema(swaggerEndpoint.getReturnType()))));
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        apiResponses.addApiResponse("200", okApiResponse);
+        apiResponses.addApiResponse("500", errorApiResponse);
 
         Operation operation = new Operation()
                 .operationId(swaggerEndpoint.getServiceName() + "-" + swaggerEndpoint.getMethodName())
@@ -132,32 +141,33 @@ public class SwaggerConfig {
             JsonProcessingException, NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException, ClassNotFoundException {
         Map<String, Schema> requestBodyProperties = new HashMap<>();
         for (Parameter parameter : swaggerEndpoint.getParameters()) {
-            Schema schema = null;
-            if (parameter.getParameterizedType().getTypeName().matches("java.util.List.*")) {
-                String listTypeName = parameter.getParameterizedType().getTypeName();
-                Class itemType = Class.forName(listTypeName.substring(listTypeName.indexOf("<") + 1, listTypeName.lastIndexOf(">")));
-                schema = new ArraySchema().items(
-                        ModelConverters.getInstance().resolveAsResolvedSchema(new AnnotatedType(itemType)).schema);
-            } else if (parameter.getParameterizedType().getTypeName().matches(".*\\[].*")) {
-                String listTypeName = parameter.getParameterizedType().getTypeName();
-                Class itemType = Class.forName(listTypeName.substring(0, listTypeName.indexOf("[")));
-                schema = new ArraySchema().items(
-                        ModelConverters.getInstance().resolveAsResolvedSchema(new AnnotatedType(itemType)).schema);
-            } else if (parameter.getParameterizedType().getTypeName().matches("java.util.Map.*")) {
-                String listTypeName = parameter.getParameterizedType().getTypeName();
-                String genericTypes = listTypeName.substring(listTypeName.indexOf("<") + 1, listTypeName.lastIndexOf(">"));
-                String valueType = genericTypes.split(",")[1].trim();
-                schema = new MapSchema().properties(createMapSchema(valueType));
-            } else {
-                schema = ModelConverters.getInstance().resolveAsResolvedSchema(new AnnotatedType(parameter.getType())).schema;
-            }
-            requestBodyProperties.put(parameter.getName(), schema);
+            System.out.println(parameter.getParameterizedType().getTypeName());
+            requestBodyProperties.put(parameter.getName(), createSchema(parameter.getParameterizedType().getTypeName()));
         }
         return requestBodyProperties;
     }
 
+    private Schema createSchema(String fullClassName) throws ClassNotFoundException {
+        if (fullClassName.matches("java.util.List.*")) {
+            String parametrizedTypePart = fullClassName.substring(fullClassName.indexOf("<") + 1, fullClassName.lastIndexOf(">"));
+            return new ArraySchema().items(
+                    ModelConverters.getInstance().resolveAsResolvedSchema(new AnnotatedType(Class.forName(parametrizedTypePart))).schema);
+        } else if (fullClassName.matches("java.util.Map.*")) {
+            String parametrizedTypePart = fullClassName.substring(fullClassName.indexOf("<") + 1, fullClassName.lastIndexOf(">"));
+            return new MapSchema().properties(createMapSchema(parametrizedTypePart.split(",")[1].trim()));
+        } else if (fullClassName.matches(".*\\[].*")) {
+            Class itemType = Class.forName(fullClassName.substring(0, fullClassName.indexOf("[")));
+            return new ArraySchema().items(
+                    ModelConverters.getInstance().resolveAsResolvedSchema(new AnnotatedType(itemType)).schema);
+        } else if (fullClassName.matches("void")) {
+            return ModelConverters.getInstance().resolveAsResolvedSchema(new AnnotatedType(void.class)).schema;
+        } else if (SupportedTypes.isSupported(fullClassName)) {
+            return ModelConverters.getInstance().resolveAsResolvedSchema(new AnnotatedType(SupportedTypes.findSimpleClassType(fullClassName))).schema;
+        }
+        return ModelConverters.getInstance().resolveAsResolvedSchema(new AnnotatedType(Class.forName(fullClassName))).schema;
+    }
+
     Map<String, Schema> createMapSchema(String className) throws ClassNotFoundException {
-        System.out.println(className);
         Map<String, Schema> map = new HashMap<>();
         map.put("key", ModelConverters.getInstance().readAllAsResolvedSchema(new AnnotatedType(Class.forName(className))).schema);
         return map;

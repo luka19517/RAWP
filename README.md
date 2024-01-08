@@ -18,4 +18,6 @@ Rest Api Web Provider for Spring Boot applications
 
 ## Notes
 
-- Currently RAWP does not support higher level of generic types. For example List<List<>> or List<Map<>>
+- Currently RAWP does not support:
+  - higher level of generic types. For example List<List<>> or List<Map<>>
+  - recursive models

@@ -32,7 +32,6 @@ public class RestApiWebRequestProcessorImpl implements RestApiWebRequestProcesso
     public Object processRequest(String serviceName, String methodName, String requestBody) {
 
         try {
-            System.out.println(serviceName + " - " + methodName + " - " + requestBody);
             Class<?> serviceClass = Class.forName(props.getRestApiServicePackage() + "." + serviceName);
             Map<String, Object> paramsMap = objectMapper.readValue(requestBody, HashMap.class);
             Method targetMethod = findTargetMethod(serviceClass, methodName, paramsMap);
@@ -62,7 +61,6 @@ public class RestApiWebRequestProcessorImpl implements RestApiWebRequestProcesso
             try {
                 String paramTypeName = param.getParameterizedType().getTypeName();
                 paramsMap.put(param.getName(), typeConverter.deserialize(objectMapper.writeValueAsString(paramsMap.get(param.getName())), paramTypeName));
-                System.out.println(param.getName() + " Type : " + paramsMap.get(param.getName()));
             } catch (Exception e) {
                 return false;
             }

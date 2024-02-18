@@ -31,3 +31,6 @@ Rest Api Web Provider for Spring Boot applications
 - Currently RAWP does not support:
   - higher level of generic types. For example List<List<>> or List<Map<>>
   - recursive models
+
+## In the future...
+- OAuth 2.0 support with Keycloak Auth server

@@ -7,6 +7,12 @@ Rest Api Web Provider for Spring Boot applications
 - Auto - Generated swagger endpoint based on your api
 
 ## How to use
+- Add dependency :
+  	<dependency>
+            <groupId>grusoftware</groupId>
+            <artifactId>rawp</artifactId>
+            <version>0.0.1-SNAPSHOTS</version>
+        </dependency>
 
 - Inside of your main spring boot class add 
 

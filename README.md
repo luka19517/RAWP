@@ -32,5 +32,5 @@ Rest Api Web Provider for Spring Boot applications
   - higher level of generic types. For example List<List<>> or List<Map<>>
   - recursive models
 
-## In the future...
+## Currently working on
 - OAuth 2.0 support with Keycloak Auth server

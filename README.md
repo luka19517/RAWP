@@ -23,8 +23,8 @@ Rest Api Web Provider for Spring Boot applications
 
 - Inside of your application.properties file insert properties:
 >
-  	- rest.api.service (this is the package where all of your exposed api services will be)
-  	- rest.api.model (this is the package where all of your exposed api models will be)
+  	- rest.api.service #(this is the package where all of your exposed api services will be)
+  	- rest.api.model   #(this is the package where all of your exposed api models will be)
 
 ## Notes
 
